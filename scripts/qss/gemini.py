@@ -7,7 +7,7 @@ import os
 import urllib.error
 import urllib.request
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -42,13 +42,29 @@ def generate(system: str, user: str, *, max_output_tokens: int, thinking_budget:
     if not key:
         raise GeminiError("GEMINI_API_KEY is not set")
     body = _body(system, user, max_output_tokens, thinking_budget)
-    try:
-        return _post(model_name(), key, body)
-    except GeminiError as exc:
-        if exc.status == 400 and "thinking" in str(exc).lower() and thinking_budget is not None:
-            fallback = _body(system, user, max_output_tokens, None)
-            return _post(model_name(), key, fallback)
-        raise
+    models = []
+    for name in (model_name(), DEFAULT_MODEL, "gemini-flash-latest"):
+        if name and name not in models:
+            models.append(name)
+    last: GeminiError | None = None
+    for model in models:
+        try:
+            return _post(model, key, body)
+        except GeminiError as exc:
+            last = exc
+            if exc.status == 400 and "thinking" in str(exc).lower() and thinking_budget is not None:
+                try:
+                    return _post(model, key, _body(system, user, max_output_tokens, None))
+                except GeminiError as retry_exc:
+                    last = retry_exc
+                    if retry_exc.status == 404:
+                        continue
+                    raise
+            if exc.status == 404:
+                continue
+            raise
+    assert last is not None
+    raise last
 
 
 def _body(system: str, user: str, max_output_tokens: int, thinking_budget: int | None) -> dict:

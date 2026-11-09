@@ -128,7 +128,7 @@ class IngestAndSiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.js"
             os.environ["GEMINI_API_KEY"] = 'AIza"></script>'
-            os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
+            os.environ["GEMINI_MODEL"] = "gemini-3.8-flash"
             try:
                 write_config(path)
                 text = path.read_text(encoding="utf-8")
@@ -176,8 +176,14 @@ class IngestAndSiteTests(unittest.TestCase):
     def test_site_build_copies_wiki_and_not_the_key_into_markdown(self):
         os.environ.pop("GEMINI_API_KEY", None)
         with tempfile.TemporaryDirectory() as tmp:
-            dest = Path(tmp) / "dist"
-            build_site(ROOT, dest, content=ROOT, sample=False)
+            root = Path(tmp)
+            dest = root / "dist"
+            content = root / "content"
+            for name in ("raw", "wiki", "sources"):
+                (content / name).mkdir(parents=True)
+            (content / "wiki" / "index.md").write_text("# Knowledge Base Index\n", encoding="utf-8")
+            (content / "wiki" / "log.md").write_text("# Wiki Log\n", encoding="utf-8")
+            build_site(ROOT, dest, content=content, sample=False)
             self.assertTrue((dest / "index.html").is_file())
             self.assertTrue((dest / "corpus.json").is_file())
             config = (dest / "config.js").read_text(encoding="utf-8")
