@@ -5,58 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>QSS Parent Committee</title>
   <meta name="description" content="Ask the QSS Parent Committee about what we have done and about the rules we publish. Answers come only from those documents.">
-  <meta name="theme-color" content="#0e5f5c">
+  <meta name="theme-color" content="#0f766e">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,560;7..72,700&family=Noto+Naskh+Arabic:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/app.css">
 </head>
 <body>
   <a class="skip" href="#question">Skip to the question</a>
-  <header class="top">
-    <div class="brand">
+  <div class="atmosphere" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="grain"></span>
+  </div>
+
+  <header class="shell-top">
+    <a class="brand-mark" href="#/ask" aria-label="QSS Parent Committee">
       <span class="seal" aria-hidden="true">QSS</span>
-      <div>
-        <p class="name" id="site-name">QSS Parent Committee</p>
-        <p class="tagline" id="site-tagline">Answers only from the documents we publish</p>
-      </div>
-    </div>
+      <span class="brand-text" id="site-name">QSS Parent Committee</span>
+    </a>
     <div class="tools">
       <nav class="nav" aria-label="Sections">
         <a href="#/ask" data-nav="ask" aria-current="page">Ask</a>
         <a href="#/library" data-nav="library">Library</a>
       </nav>
       <div class="langs" role="group" aria-label="Language">
-        <button type="button" data-lang="en" aria-pressed="true">English</button>
-        <button type="button" data-lang="ar" aria-pressed="false">العربية</button>
-        <button type="button" data-lang="fr" aria-pressed="false">Français</button>
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ar" aria-pressed="false">ع</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
       </div>
     </div>
   </header>
+
   <div id="sample-banner" class="sample" hidden></div>
+
   <main>
-    <section id="panel-ask" aria-labelledby="scope-title">
-      <article class="scope" id="scope-card">
-        <h1 id="scope-title">What this can answer</h1>
-        <p id="scope-body">Questions about the parent committee, what we have done, and the rules in the files we upload. If a document says whether we can do something, you get that answer. If it is not written here, the assistant says so.</p>
-        <p class="scope-no" id="scope-no">It will not invent a rule, and it will not answer about a specific child or family.</p>
-      </article>
-      <div id="suggestions" class="suggestions" hidden></div>
-      <div id="thread" class="thread" aria-live="polite"></div>
-      <form id="ask-form" class="composer">
-        <label class="sr-only" for="question" id="question-label">Ask</label>
-        <textarea id="question" name="question" rows="2" maxlength="1000" required placeholder="Ask about the committee, what we did, or a rule…"></textarea>
-        <button type="submit" id="send">Send</button>
-      </form>
-      <p class="fineprint" id="fineprint"></p>
+    <section id="panel-ask" class="panel panel-ask" aria-labelledby="hero-title">
+      <div class="stage" id="ask-stage">
+        <div class="hero" id="hero">
+          <div class="hero-copy rise" style="--delay: 0ms">
+            <p class="eyebrow" id="site-tagline">Answers only from the documents we publish</p>
+            <h1 id="hero-title">Ask from our published documents</h1>
+            <p class="lede" id="scope-body">Questions about the parent committee, what we have done, and the rules in the files we upload. If it is not written here, the assistant says so.</p>
+            <p class="guard" id="scope-no">It will not invent a rule, and it will not answer about a specific child or family.</p>
+          </div>
+          <aside class="hero-visual rise" style="--delay: 120ms" aria-hidden="true">
+            <div class="folio">
+              <div class="leaf leaf-back"></div>
+              <div class="leaf leaf-mid"></div>
+              <div class="leaf leaf-front">
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div id="suggestions" class="suggestions rise" style="--delay: 180ms" hidden></div>
+        <div id="thread" class="thread" aria-live="polite"></div>
+
+        <form id="ask-form" class="composer rise" style="--delay: 240ms">
+          <label class="sr-only" for="question" id="question-label">Ask</label>
+          <textarea id="question" name="question" rows="2" maxlength="1000" required placeholder="Ask about the committee, what we did, or a rule…"></textarea>
+          <button type="submit" id="send">
+            <span id="send-label">Send</span>
+            <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12m0 0-5-5m5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+        <p class="fineprint rise" style="--delay: 300ms" id="fineprint"></p>
+        <div id="empty-note" class="empty-inline rise" style="--delay: 320ms" hidden></div>
+      </div>
+      <p id="scope-title" class="sr-only">What this can answer</p>
     </section>
-    <section id="panel-library" hidden></section>
-    <section id="panel-doc" hidden></section>
+
+    <section id="panel-library" class="panel" hidden></section>
+    <section id="panel-doc" class="panel" hidden></section>
   </main>
+
   <footer>
     <p id="footer-note">This page can only repeat what is in the published files. It can miss something or phrase it poorly. For a decision, read the original document or ask the committee.</p>
   </footer>
+
   <noscript>
     <p class="noscript">This knowledge base needs JavaScript to search the published documents.</p>
   </noscript>
