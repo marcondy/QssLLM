@@ -22,6 +22,8 @@ GitHub Actions then:
 
 Do not upload student lists, medical notes, phone numbers, addresses, or anything a family has not agreed to publish. This repository is public, and so is the site.
 
+If a file cannot be read (for example a scanned PDF with no selectable text), it is moved to `sources/_failed/` with an `.error.txt` note and a line is added to `wiki/log.md`. Export a text PDF or paste the wording into a `.md` file and upload that instead.
+
 ## Ask a question
 
 After the site is published, open the GitHub Pages URL. Ask in Arabic, French, or English. The chrome of the page can be switched among those three languages.

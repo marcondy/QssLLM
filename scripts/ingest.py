@@ -92,20 +92,53 @@ def _store_raw(root: Path, inbox: Path, path: Path, collected: str) -> tuple[str
 
 def _retire_duplicate(root: Path, path: Path, prior: dict) -> None:
     """Move a re-uploaded copy aside without compiling it again."""
-    failed = root / "inbox" / "_failed"
-    dest = unique_destination(failed, path.name + ".duplicate")
-    shutil.move(str(path), dest)
+    dest = unique_destination(root / "sources" / "_failed", path.name + ".duplicate")
+    try:
+        shutil.move(str(path), dest)
+        note = Path(str(dest) + ".error.txt")
+        note.write_text(
+            f"Already ingested earlier as {prior.get('raw', 'a raw file')}.\n"
+            "Delete this copy if you do not need it.\n",
+            encoding="utf-8",
+        )
+        _append_ingest_log(
+            root,
+            f"## [{today()}] ingest | duplicate skipped: {path.name}\n"
+            f"- Disposition: already ingested\n"
+            f"- Note: same file was already saved as {prior.get('raw', 'a raw file')}.",
+        )
+    except OSError as exc:
+        print(f"::warning::Could not move duplicate upload {path.name}: {exc}")
     print(f"::warning::{path.name} was already ingested as {prior.get('raw', 'a raw file')}.")
 
 
 def _fail_file(root: Path, path: Path, message: str) -> None:
-    dest = unique_destination(root / "inbox" / "_failed", path.name)
+    """Keep a failed upload in the repo so the error is visible on main."""
+    dest = unique_destination(root / "sources" / "_failed", path.name)
+    note = Path(str(dest) + ".error.txt")
     try:
         shutil.move(str(path), dest)
-        note = dest.with_suffix(dest.suffix + ".error.txt")
-        note.write_text(message + "\n", encoding="utf-8")
+        note.write_text(message.strip() + "\n", encoding="utf-8")
+        _append_ingest_log(
+            root,
+            f"## [{today()}] ingest | failed: {dest.relative_to(root).as_posix()}\n"
+            f"- Disposition: failed\n"
+            f"- Note: {message.strip()}",
+        )
     except OSError as exc:
         print(f"::warning::Could not move failed upload {path.name}: {exc}")
+    print(f"::error::Could not ingest {path.name}: {message}")
+
+
+def _append_ingest_log(root: Path, entry: str) -> None:
+    log_path = root / "wiki" / "log.md"
+    text = log_path.read_text(encoding="utf-8") if log_path.exists() else "# Wiki Log\n"
+    if not text.endswith("\n"):
+        text += "\n"
+    if not text.endswith("\n\n"):
+        text += "\n"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(text + entry.strip() + "\n", encoding="utf-8")
 
 
 def _sha256(path: Path) -> str:

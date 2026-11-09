@@ -6,4 +6,3 @@ dist/
 site/config.js
 *.log
 .python-version
-inbox/_failed/

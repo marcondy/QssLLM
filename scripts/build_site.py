@@ -20,6 +20,17 @@ from qss.gemini import DEFAULT_MODEL  # noqa: E402
 KEY_ALPHABET = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 
 
+def normalize_api_key(raw: str) -> str:
+    """Strip common paste mistakes from GitHub secrets (quotes, BOM, whitespace)."""
+    key = (raw or "").replace("\ufeff", "").strip()
+    if len(key) >= 2 and key[0] == key[-1] and key[0] in {'"', "'"}:
+        key = key[1:-1].strip()
+    # Secrets sometimes get a trailing newline encoded as a literal \n.
+    if key.endswith("\\n"):
+        key = key[:-2].strip()
+    return key
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the GitHub Pages site")
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -66,9 +77,15 @@ def build_site(repo: Path, dest: Path, content: Path | None = None, sample: bool
 
 
 def write_config(path: Path, sample: bool = False) -> None:
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    key = normalize_api_key(os.environ.get("GEMINI_API_KEY", ""))
     if key and not _safe_key(key):
-        print("::warning::GEMINI_API_KEY has unexpected characters, so the published site will not include it.")
+        bad = sorted({ch for ch in key if ch not in KEY_ALPHABET})
+        shown = " ".join(repr(ch) for ch in bad[:8]) or "unknown"
+        print(
+            "::warning::GEMINI_API_KEY has unexpected characters "
+            f"({shown}), so the published site will not include it. "
+            "Re-paste the key in the repository secret with no quotes or spaces."
+        )
         key = ""
     model = os.environ.get("GEMINI_MODEL", "").strip() or DEFAULT_MODEL
     if not model or len(model) > 80 or any(not (ch.isalnum() or ch in ".-") for ch in model):
