@@ -1,1 +1,1 @@
-window.QSS_CONFIG = {"apiKey": "", "model": "gemini-2.5-flash", "sample": false};
+window.QSS_CONFIG = {"apiKey": "", "model": "gemini-3.8-flash", "sample": false};

@@ -54,7 +54,7 @@ Referrer limits stop ordinary use from other websites. They do not stop someone 
 
 Leave the secret empty if you would rather not expose a key. The page still finds the matching passages and shows them. It just does not write a paragraph on top.
 
-Optional repository variable `GEMINI_MODEL` (default `gemini-2.5-flash`).
+Optional repository variable `GEMINI_MODEL` (default `gemini-3.8-flash`).
 
 ### 2. Turn on GitHub Pages
 

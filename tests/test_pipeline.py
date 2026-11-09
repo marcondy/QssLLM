@@ -128,7 +128,7 @@ class IngestAndSiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.js"
             os.environ["GEMINI_API_KEY"] = 'AIza"></script>'
-            os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
+            os.environ["GEMINI_MODEL"] = "gemini-3.8-flash"
             try:
                 write_config(path)
                 text = path.read_text(encoding="utf-8")

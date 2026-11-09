@@ -5,7 +5,7 @@ import { localAnswer, geminiBody, parseAnswer, answerTextFromGemini } from "./gr
 
 const DAILY_LIMIT = 20;
 const INBOX_URL = "https://github.com/marcondy/QssLLM/tree/main/inbox";
-const config = window.QSS_CONFIG || { apiKey: "", model: "gemini-2.5-flash", sample: false };
+const config = window.QSS_CONFIG || { apiKey: "", model: "gemini-3.8-flash", sample: false };
 
 const state = {
   lang: "en",
@@ -311,7 +311,7 @@ function highlight(text, query) {
 
 async function askGemini(question, hits) {
   const body = geminiBody(question, hits);
-  const models = [...new Set([config.model, "gemini-2.5-flash", "gemini-flash-latest"].filter(Boolean))];
+  const models = [...new Set([config.model, "gemini-3.8-flash", "gemini-flash-latest"].filter(Boolean))];
   let last = null;
   for (const model of models) {
     last = await postModel(model, body);
