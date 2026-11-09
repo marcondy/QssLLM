@@ -145,6 +145,34 @@ class IngestAndSiteTests(unittest.TestCase):
             finally:
                 os.environ.pop("GEMINI_API_KEY", None)
 
+            os.environ["GEMINI_API_KEY"] = '  "AIzaSyTESTKEY123456"  \n'
+            try:
+                write_config(path)
+                payload = json.loads(path.read_text(encoding="utf-8").split("=", 1)[1].strip().rstrip(";"))
+                self.assertEqual(payload["apiKey"], "AIzaSyTESTKEY123456")
+            finally:
+                os.environ.pop("GEMINI_API_KEY", None)
+
+    def test_failed_upload_stays_visible_in_sources(self):
+        os.environ.pop("GEMINI_API_KEY", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("raw", "wiki", "inbox", "sources"):
+                (root / name).mkdir()
+            (root / "wiki" / "index.md").write_text("# Knowledge Base Index\n", encoding="utf-8")
+            (root / "wiki" / "log.md").write_text("# Wiki Log\n", encoding="utf-8")
+            (root / "inbox" / "scan.pdf").write_bytes(b"%PDF-1.4 empty")
+            (root / "ingest-state.json").write_text('{"files": {}}\n', encoding="utf-8")
+            result = ingest(root)
+            self.assertEqual(result["failed"], 1)
+            failed = list((root / "sources" / "_failed").glob("*"))
+            self.assertTrue(any(path.name == "scan.pdf" for path in failed))
+            self.assertTrue(any(path.name.endswith(".error.txt") for path in failed))
+            log = (root / "wiki" / "log.md").read_text(encoding="utf-8")
+            self.assertIn("failed:", log)
+            self.assertFalse((root / "inbox" / "scan.pdf").exists())
+            self.assertEqual(list((root / "raw").rglob("*.md")), [])
+
     def test_site_build_copies_wiki_and_not_the_key_into_markdown(self):
         os.environ.pop("GEMINI_API_KEY", None)
         with tempfile.TemporaryDirectory() as tmp:

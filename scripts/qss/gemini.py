@@ -18,7 +18,12 @@ class GeminiError(RuntimeError):
 
 
 def api_key() -> str:
-    return os.environ.get("GEMINI_API_KEY", "").strip()
+    key = (os.environ.get("GEMINI_API_KEY", "") or "").replace("\ufeff", "").strip()
+    if len(key) >= 2 and key[0] == key[-1] and key[0] in {'"', "'"}:
+        key = key[1:-1].strip()
+    if key.endswith("\\n"):
+        key = key[:-2].strip()
+    return key
 
 
 def model_name() -> str:

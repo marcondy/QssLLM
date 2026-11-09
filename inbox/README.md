@@ -4,7 +4,9 @@ Put a file in this folder, then commit it to `main`. The publish workflow copies
 
 ## What to upload
 
-PDF, Word (`.docx`), HTML, Markdown, CSV, or plain text. A scanned PDF that has no text layer will not work; export a text PDF or paste the text into a `.md` file.
+PDF, Word (`.docx`), HTML, Markdown, CSV, or plain text.
+
+A scanned PDF (photo of pages, no selectable text) will fail. In that case the file is moved to `sources/_failed/` with an `.error.txt` note, and `wiki/log.md` records the failure. Export a text PDF from Word/Google Docs, or paste the text into a `.md` file and put that in `inbox/` instead.
 
 ## Where it is filed
 
