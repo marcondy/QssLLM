@@ -2,6 +2,7 @@ export const STRINGS = {
   en: {
     name: "QSS Parent Committee",
     tagline: "Answers only from the documents we publish",
+    heroTitle: "Ask from our published documents",
     ask: "Ask",
     library: "Library",
     askPlaceholder: "Ask about the committee, what we did, or a rule…",
@@ -45,6 +46,7 @@ export const STRINGS = {
   ar: {
     name: "لجنة الأهل — QSS",
     tagline: "إجابات من الوثائق التي ننشرها فقط",
+    heroTitle: "اسأل من الوثائق التي ننشرها",
     ask: "اسأل",
     library: "المكتبة",
     askPlaceholder: "اسأل عن اللجنة، أو عمّا قمنا به، أو عن نظام أو قاعدة…",
@@ -85,6 +87,7 @@ export const STRINGS = {
   fr: {
     name: "Comité des parents QSS",
     tagline: "Réponses uniquement à partir des documents publiés",
+    heroTitle: "Posez une question à partir de nos documents",
     ask: "Question",
     library: "Bibliothèque",
     askPlaceholder: "Posez une question sur le comité, ce que nous avons fait, ou un règlement…",

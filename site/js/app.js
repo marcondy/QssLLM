@@ -19,16 +19,19 @@ const els = {
   name: document.getElementById("site-name"),
   tagline: document.getElementById("site-tagline"),
   banner: document.getElementById("sample-banner"),
+  heroTitle: document.getElementById("hero-title"),
   scopeTitle: document.getElementById("scope-title"),
   scopeBody: document.getElementById("scope-body"),
   scopeNo: document.getElementById("scope-no"),
-  scope: document.getElementById("scope-card"),
+  stage: document.getElementById("ask-stage"),
   suggestions: document.getElementById("suggestions"),
   thread: document.getElementById("thread"),
   form: document.getElementById("ask-form"),
   question: document.getElementById("question"),
   send: document.getElementById("send"),
+  sendLabel: document.getElementById("send-label"),
   fineprint: document.getElementById("fineprint"),
+  emptyNote: document.getElementById("empty-note"),
   ask: document.getElementById("panel-ask"),
   library: document.getElementById("panel-library"),
   doc: document.getElementById("panel-doc"),
@@ -49,7 +52,10 @@ async function init() {
       renderRoute();
     });
   });
-  window.addEventListener("hashchange", renderRoute);
+  window.addEventListener("hashchange", () => {
+    restartPanelMotion();
+    renderRoute();
+  });
   try {
     const response = await fetch("./corpus.json");
     if (response.ok) state.corpus = await response.json();
@@ -77,12 +83,13 @@ function applyLanguage() {
   document.title = text.name;
   els.name.textContent = text.name;
   els.tagline.textContent = text.tagline;
+  els.heroTitle.textContent = text.heroTitle;
   els.scopeTitle.textContent = text.scopeTitle;
   els.scopeBody.textContent = text.scopeBody;
   els.scopeNo.textContent = text.scopeNo;
   els.question.placeholder = text.askPlaceholder;
   els.question.setAttribute("aria-label", text.ask);
-  els.send.textContent = text.send;
+  els.sendLabel.textContent = text.send;
   els.footer.textContent = text.footer;
   document.querySelector('[data-nav="ask"]').textContent = text.ask;
   document.querySelector('[data-nav="library"]').textContent = text.library;
@@ -106,6 +113,10 @@ function renderFineprint() {
 }
 
 function renderSuggestions() {
+  if (state.messages.length) {
+    els.suggestions.hidden = true;
+    return;
+  }
   const articles = (state.corpus.articles || []).filter((article) => article.kind === "wiki").slice(0, 3);
   const pool = articles.length ? articles : (state.corpus.articles || []).slice(0, 3);
   if (!pool.length) {
@@ -116,7 +127,7 @@ function renderSuggestions() {
   const text = t();
   els.suggestions.hidden = false;
   els.suggestions.innerHTML = pool
-    .map((article) => `<button type="button" data-q="${escapeHtml(suggestion(article.title))}">${escapeHtml(suggestion(article.title))}</button>`)
+    .map((article, index) => `<button type="button" style="--delay:${180 + index * 70}ms" data-q="${escapeHtml(suggestion(article.title))}">${escapeHtml(suggestion(article.title))}</button>`)
     .join("");
   els.suggestions.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -128,21 +139,27 @@ function renderSuggestions() {
 }
 
 function renderEmptyNote() {
-  const existing = document.getElementById("empty-note");
-  if ((state.corpus.articles || []).length) {
-    if (existing) existing.remove();
+  if ((state.corpus.articles || []).length || state.messages.length) {
+    els.emptyNote.hidden = true;
+    els.emptyNote.innerHTML = "";
     return;
   }
-  const note = existing || document.createElement("p");
-  note.id = "empty-note";
-  note.innerHTML = `${escapeHtml(t().emptyLibraryBody)} <a href="${INBOX_URL}">${escapeHtml(t().openInbox)}</a>`;
-  if (!existing) els.scope.appendChild(note);
+  els.emptyNote.hidden = false;
+  els.emptyNote.innerHTML = `${escapeHtml(t().emptyLibraryBody)} <a href="${INBOX_URL}">${escapeHtml(t().openInbox)}</a>`;
 }
 
 function suggestion(title) {
   if (state.lang === "ar") return `ماذا تقول الوثائق عن ${title}؟`;
   if (state.lang === "fr") return `Que disent les documents au sujet de « ${title} » ?`;
   return `What do the documents say about ${title}?`;
+}
+
+function restartPanelMotion() {
+  for (const panel of [els.ask, els.library, els.doc]) {
+    panel.classList.remove("panel");
+    void panel.offsetWidth;
+    panel.classList.add("panel");
+  }
 }
 
 function renderRoute() {
@@ -174,7 +191,7 @@ async function onSubmit(event) {
   const question = els.question.value.trim();
   if (!question) return;
   els.question.value = "";
-  els.scope.classList.add("is-compact");
+  els.stage.classList.add("is-chatting");
   state.messages.push({ role: "user", text: question });
   renderThread();
   state.busy = true;
@@ -237,7 +254,7 @@ async function onSubmit(event) {
 }
 
 function replacePending(message) {
-  const index = state.messages.lastIndexOf(state.messages.find((item) => item.kind === "pending"));
+  const index = state.messages.findIndex((item) => item.kind === "pending");
   if (index === -1) state.messages.push(message);
   else state.messages.splice(index, 1, message);
   renderThread();
@@ -245,18 +262,27 @@ function replacePending(message) {
 
 function renderThread() {
   const text = t();
+  if (state.messages.length) {
+    els.stage.classList.add("is-chatting");
+    els.suggestions.hidden = true;
+    els.emptyNote.hidden = true;
+  }
   els.thread.innerHTML = state.messages
-    .map((message) => {
-      if (message.role === "user") return `<div class="bubble user">${escapeHtml(message.text)}</div>`;
-      if (message.kind === "pending") return `<div class="bubble assistant"><p class="lead">${escapeHtml(text.thinking)}</p></div>`;
-      if (message.kind === "local") return `<div class="bubble assistant"><p>${escapeHtml(localAnswer(message.localKind, state.lang))}</p></div>`;
-      if (message.kind === "answer") {
-        return `<div class="bubble assistant"><div class="doc-body">${renderMarkdown(message.answer)}</div>${passageBlock(message, text)}</div>`;
+    .map((message, index) => {
+      const style = `style="--delay:${Math.min(index * 40, 160)}ms"`;
+      if (message.role === "user") return `<div class="bubble user" ${style}>${escapeHtml(message.text)}</div>`;
+      if (message.kind === "pending") {
+        return `<div class="bubble assistant pending" ${style}><p class="lead">${escapeHtml(text.thinking)}</p></div>`;
       }
-      return `<div class="bubble assistant"><p class="lead">${escapeHtml(message.lead || "")}</p>${passageBlock(message, text)}</div>`;
+      if (message.kind === "local") {
+        return `<div class="bubble assistant" ${style}><p>${escapeHtml(localAnswer(message.localKind, state.lang))}</p></div>`;
+      }
+      if (message.kind === "answer") {
+        return `<div class="bubble assistant" ${style}><div class="doc-body">${renderMarkdown(message.answer)}</div>${passageBlock(message, text)}</div>`;
+      }
+      return `<div class="bubble assistant" ${style}><p class="lead">${escapeHtml(message.lead || "")}</p>${passageBlock(message, text)}</div>`;
     })
     .join("");
-  if (state.messages.length) els.suggestions.hidden = true;
   const last = els.thread.lastElementChild;
   if (last) last.scrollIntoView({ block: "center", inline: "nearest" });
 }
@@ -346,7 +372,7 @@ function renderLibrary() {
   const text = t();
   const articles = state.corpus.articles || [];
   if (!articles.length) {
-    els.library.innerHTML = `<div class="empty card"><h2>${escapeHtml(text.emptyLibraryTitle)}</h2><p>${escapeHtml(text.emptyLibraryBody)}</p><p><a href="${INBOX_URL}">${escapeHtml(text.openInbox)}</a></p></div>`;
+    els.library.innerHTML = `<div class="empty"><h2>${escapeHtml(text.emptyLibraryTitle)}</h2><p>${escapeHtml(text.emptyLibraryBody)}</p><p><a href="${INBOX_URL}">${escapeHtml(text.openInbox)}</a></p></div>`;
     return;
   }
   const guides = articles.filter((article) => article.kind === "wiki");
@@ -389,4 +415,3 @@ async function renderDoc(rawPath) {
   const banner = path.startsWith("raw/") ? `<p class="banner">${escapeHtml(text.sourceBanner)}</p>` : "";
   els.doc.innerHTML = `${back}<article class="doc">${banner}<div class="doc-body">${renderMarkdown(markdown, { from: path })}</div></article>`;
 }
-
