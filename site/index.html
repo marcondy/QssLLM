@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QSS Parent Committee</title>
+  <meta name="description" content="Ask the QSS Parent Committee about what we have done and about the rules we publish. Answers come only from those documents.">
+  <meta name="theme-color" content="#0e5f5c">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,560;7..72,700&family=Noto+Naskh+Arabic:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+  <a class="skip" href="#question">Skip to the question</a>
+  <header class="top">
+    <div class="brand">
+      <span class="seal" aria-hidden="true">QSS</span>
+      <div>
+        <p class="name" id="site-name">QSS Parent Committee</p>
+        <p class="tagline" id="site-tagline">Answers only from the documents we publish</p>
+      </div>
+    </div>
+    <div class="tools">
+      <nav class="nav" aria-label="Sections">
+        <a href="#/ask" data-nav="ask" aria-current="page">Ask</a>
+        <a href="#/library" data-nav="library">Library</a>
+      </nav>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="ar" aria-pressed="false">العربية</button>
+        <button type="button" data-lang="fr" aria-pressed="false">Français</button>
+      </div>
+    </div>
+  </header>
+  <div id="sample-banner" class="sample" hidden></div>
+  <main>
+    <section id="panel-ask" aria-labelledby="scope-title">
+      <article class="scope" id="scope-card">
+        <h1 id="scope-title">What this can answer</h1>
+        <p id="scope-body">Questions about the parent committee, what we have done, and the rules in the files we upload. If a document says whether we can do something, you get that answer. If it is not written here, the assistant says so.</p>
+        <p class="scope-no" id="scope-no">It will not invent a rule, and it will not answer about a specific child or family.</p>
+      </article>
+      <div id="suggestions" class="suggestions" hidden></div>
+      <div id="thread" class="thread" aria-live="polite"></div>
+      <form id="ask-form" class="composer">
+        <label class="sr-only" for="question" id="question-label">Ask</label>
+        <textarea id="question" name="question" rows="2" maxlength="1000" required placeholder="Ask about the committee, what we did, or a rule…"></textarea>
+        <button type="submit" id="send">Send</button>
+      </form>
+      <p class="fineprint" id="fineprint"></p>
+    </section>
+    <section id="panel-library" hidden></section>
+    <section id="panel-doc" hidden></section>
+  </main>
+  <footer>
+    <p id="footer-note">This page can only repeat what is in the published files. It can miss something or phrase it poorly. For a decision, read the original document or ask the committee.</p>
+  </footer>
+  <noscript>
+    <p class="noscript">This knowledge base needs JavaScript to search the published documents.</p>
+  </noscript>
+  <script src="./config.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

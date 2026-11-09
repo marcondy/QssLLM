@@ -1,0 +1,82 @@
+name: Publish knowledge base
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: qss-knowledge-base
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install extractor dependencies
+        run: pip install -r requirements.txt
+      - name: Test the ingest pipeline
+        run: python -m unittest discover -s tests -v
+      - name: Test search and grounding
+        run: node --test tests/*.mjs
+
+  publish:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install extractor dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Ingest new documents
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python3 scripts/ingest.py
+      - name: Save compiled pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add raw wiki sources inbox ingest-state.json
+          if git diff --cached --quiet; then
+            echo "No knowledge-base changes to commit."
+          else
+            git commit -m "Update the knowledge base from inbox"
+            git push || echo "::warning::The compiled pages are in this build, but Actions could not push them back to main."
+          fi
+      - name: Build the site
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python3 scripts/build_site.py --dest dist
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
