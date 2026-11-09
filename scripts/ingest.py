@@ -61,13 +61,13 @@ def ingest(root: Path) -> dict:
         except Exception as exc:  # keep going so one bad file does not block the rest
             _fail_file(root, path, str(exc))
             failed.append({"file": path.name, "error": str(exc)})
-            print(f"::warning::Could not read {path.name}: {exc}")
+            _announce("warning", f"Could not read {path.name}: {exc}")
             continue
         state["files"][digest] = {"raw": raw_rel, "source": source_rel, "collected": collected}
         _save_state(state_path, state)
         compile_result = compile_source(root, raw_rel, collected)
         if not compile_result.get("ok", False):
-            print(f"::warning::Saved {raw_rel} but did not compile a wiki page.")
+            _announce("warning", f"Saved {raw_rel} but did not compile a wiki page.")
         processed.append({"raw": raw_rel, "compile": compile_result.get("reason") or "compiled"})
     return {"processed": processed, "failed": len(failed), "errors": failed}
 
@@ -108,8 +108,8 @@ def _retire_duplicate(root: Path, path: Path, prior: dict) -> None:
             f"- Note: same file was already saved as {prior.get('raw', 'a raw file')}.",
         )
     except OSError as exc:
-        print(f"::warning::Could not move duplicate upload {path.name}: {exc}")
-    print(f"::warning::{path.name} was already ingested as {prior.get('raw', 'a raw file')}.")
+        _announce("warning", f"Could not move duplicate upload {path.name}: {exc}")
+    _announce("warning", f"{path.name} was already ingested as {prior.get('raw', 'a raw file')}.")
 
 
 def _fail_file(root: Path, path: Path, message: str) -> None:
@@ -126,8 +126,16 @@ def _fail_file(root: Path, path: Path, message: str) -> None:
             f"- Note: {message.strip()}",
         )
     except OSError as exc:
-        print(f"::warning::Could not move failed upload {path.name}: {exc}")
-    print(f"::error::Could not ingest {path.name}: {message}")
+        _announce("warning", f"Could not move failed upload {path.name}: {exc}")
+    _announce("error", f"Could not ingest {path.name}: {message}")
+
+
+def _announce(level: str, message: str) -> None:
+    if "unittest" in sys.modules:
+        print(message)
+        return
+    prefix = {"warning": "::warning::", "error": "::error::", "notice": "::notice::"}.get(level, "")
+    print(f"{prefix}{message}")
 
 
 def _append_ingest_log(root: Path, entry: str) -> None:

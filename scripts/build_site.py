@@ -77,21 +77,38 @@ def build_site(repo: Path, dest: Path, content: Path | None = None, sample: bool
 
 
 def write_config(path: Path, sample: bool = False) -> None:
-    key = normalize_api_key(os.environ.get("GEMINI_API_KEY", ""))
+    raw = os.environ.get("GEMINI_API_KEY", "")
+    key = normalize_api_key(raw)
     if key and not _safe_key(key):
         bad = sorted({ch for ch in key if ch not in KEY_ALPHABET})
         shown = " ".join(repr(ch) for ch in bad[:8]) or "unknown"
-        print(
-            "::warning::GEMINI_API_KEY has unexpected characters "
+        _announce(
+            "warning",
+            "GEMINI_API_KEY has unexpected characters "
             f"({shown}), so the published site will not include it. "
-            "Re-paste the key in the repository secret with no quotes or spaces."
+            "Re-paste the key in the repository secret with no quotes or spaces.",
         )
         key = ""
+    elif key:
+        _announce("notice", f"Gemini key accepted for the published site (length {len(key)}).")
+    elif raw.strip():
+        _announce("warning", "GEMINI_API_KEY was set but empty after cleaning, so it was not published.")
+    else:
+        _announce("notice", "No GEMINI_API_KEY set; the site will show matching passages only.")
     model = os.environ.get("GEMINI_MODEL", "").strip() or DEFAULT_MODEL
     if not model or len(model) > 80 or any(not (ch.isalnum() or ch in ".-") for ch in model):
         model = DEFAULT_MODEL
     payload = {"apiKey": key, "model": model, "sample": sample}
     path.write_text("window.QSS_CONFIG = " + json.dumps(payload) + ";\n", encoding="utf-8")
+
+
+def _announce(level: str, message: str) -> None:
+    """Print a GitHub annotation only outside unit tests."""
+    if "unittest" in sys.modules:
+        print(message)
+        return
+    prefix = {"warning": "::warning::", "error": "::error::", "notice": "::notice::"}.get(level, "")
+    print(f"{prefix}{message}")
 
 
 def _safe_key(key: str) -> bool:
