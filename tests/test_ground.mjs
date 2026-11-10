@@ -6,6 +6,7 @@ test("the assistant is told to stay inside the passages", () => {
   assert.match(SYSTEM_PROMPT, /only the passages inside <documents>/);
   assert.match(SYSTEM_PROMPT, /Do not use outside knowledge/);
   assert.match(SYSTEM_PROMPT, /about a child/i);
+  assert.match(SYSTEM_PROMPT, /different language from the question/i);
   const body = geminiBody("Can we do this?", [{ path: "wiki/committee/rules.md", title: "Rules", heading: "Overview", text: "The minutes approve a book drive." }]);
   assert.equal(body.tools, undefined);
   assert.equal(body.generationConfig.temperature, 0.2);

@@ -1,95 +1,160 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QSS Parent Committee</title>
-  <meta name="description" content="Ask the QSS Parent Committee about what we have done and about the rules we publish. Answers come only from those documents.">
-  <meta name="theme-color" content="#0f766e">
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/app.css">
-</head>
-<body>
-  <a class="skip" href="#question">Skip to the question</a>
-  <div class="atmosphere" aria-hidden="true">
-    <span class="orb orb-a"></span>
-    <span class="orb orb-b"></span>
-    <span class="grain"></span>
-  </div>
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QSS Parent Committee</title>
+    <meta
+      name="description"
+      content="Ask the QSS Parent Committee knowledge base before you write to us — check current work and what the published rules allow."
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
 
-  <header class="shell-top">
-    <a class="brand-mark" href="#/ask" aria-label="QSS Parent Committee">
-      <span class="seal" aria-hidden="true">QSS</span>
-      <span class="brand-text" id="site-name">QSS Parent Committee</span>
-    </a>
-    <div class="tools">
-      <nav class="nav" aria-label="Sections">
-        <a href="#/ask" data-nav="ask" aria-current="page">Ask</a>
-        <a href="#/library" data-nav="library">Library</a>
-      </nav>
-      <div class="langs" role="group" aria-label="Language">
-        <button type="button" data-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-lang="ar" aria-pressed="false">ع</button>
-        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#/" data-route="ask">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text" data-i18n="brand">QSS Parent Committee</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="#/" data-route="ask" data-i18n="navAsk">Ask</a>
+          <a href="#about" data-scroll="about" data-i18n="navAbout">About</a>
+          <a href="#mission" data-scroll="mission" data-i18n="navMission">Mission</a>
+          <a href="#tasks" data-scroll="tasks" data-i18n="navTasks">Current work</a>
+          <a href="#/library" data-route="library" data-i18n="navLibrary">Library</a>
+        </nav>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="ar" aria-pressed="false">عربي</button>
+          <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <div id="sample-banner" class="sample" hidden></div>
-
-  <main>
-    <section id="panel-ask" class="panel panel-ask" aria-labelledby="hero-title">
-      <div class="stage" id="ask-stage">
-        <div class="hero" id="hero">
-          <div class="hero-copy rise" style="--delay: 0ms">
-            <p class="eyebrow" id="site-tagline">Answers only from the documents we publish</p>
-            <h1 id="hero-title">Ask from our published documents</h1>
-            <p class="lede" id="scope-body">Questions about the parent committee, what we have done, and the rules in the files we upload. If it is not written here, the assistant says so.</p>
-            <p class="guard" id="scope-no">It will not invent a rule, and it will not answer about a specific child or family.</p>
-          </div>
-          <aside class="hero-visual rise" style="--delay: 120ms" aria-hidden="true">
-            <div class="folio">
-              <div class="leaf leaf-back"></div>
-              <div class="leaf leaf-mid"></div>
-              <div class="leaf leaf-front">
-                <span></span><span></span><span></span><span></span>
+    <main id="main">
+      <section id="panel-ask" class="panel panel-ask is-active" data-panel="ask" aria-labelledby="hero-brand">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="hero-brand" id="hero-brand" data-i18n="brand">QSS Parent Committee</p>
+            <h1 data-i18n="heroTitle">Ask here before you ask us</h1>
+            <p class="hero-lead" data-i18n="heroLead">
+              Check what we are already working on, and what the published rules allow, before writing to the committee.
+            </p>
+            <form id="ask-form" class="ask-form" autocomplete="off">
+              <label class="sr-only" for="question" data-i18n="askLabel">Your question</label>
+              <textarea
+                id="question"
+                name="question"
+                rows="3"
+                required
+                data-i18n-placeholder="askPlaceholder"
+                placeholder="Can we do this under the rules? Are you already working on it?"
+              ></textarea>
+              <div class="ask-actions">
+                <button type="submit" class="btn-primary" data-i18n="askSubmit">Ask the assistant</button>
+                <p class="ask-hint" data-i18n="askHint">
+                  Answers come only from published committee documents. Ask in English, Arabic, or French.
+                </p>
               </div>
+            </form>
+            <div class="suggestions" aria-label="Starter questions">
+              <p class="suggestions-label" data-i18n="suggestionsLabel">Try asking</p>
+              <div id="suggestions" class="suggestion-list"></div>
             </div>
-          </aside>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <img
+              class="hero-photo"
+              src="./assets/uniform.jpg"
+              alt=""
+              width="428"
+              height="437"
+            />
+            <div class="hero-photo-frame"></div>
+          </div>
         </div>
 
-        <div id="suggestions" class="suggestions rise" style="--delay: 180ms" hidden></div>
-        <div id="thread" class="thread" aria-live="polite"></div>
+        <section id="answer" class="answer" hidden aria-live="polite">
+          <div class="answer-head">
+            <h2 data-i18n="answerTitle">Answer</h2>
+            <p id="answer-status" class="answer-status"></p>
+          </div>
+          <div id="answer-body" class="answer-body"></div>
+          <div id="answer-sources" class="answer-sources"></div>
+          <p class="answer-next" data-i18n="answerNext">
+            Still need the committee? Write to us only after this page cannot answer from the published rules.
+          </p>
+        </section>
 
-        <form id="ask-form" class="composer rise" style="--delay: 240ms">
-          <label class="sr-only" for="question" id="question-label">Ask</label>
-          <textarea id="question" name="question" rows="2" maxlength="1000" required placeholder="Ask about the committee, what we did, or a rule…"></textarea>
-          <button type="submit" id="send">
-            <span id="send-label">Send</span>
-            <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12m0 0-5-5m5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </form>
-        <p class="fineprint rise" style="--delay: 300ms" id="fineprint"></p>
-        <div id="empty-note" class="empty-inline rise" style="--delay: 320ms" hidden></div>
-      </div>
-      <p id="scope-title" class="sr-only">What this can answer</p>
-    </section>
+        <section id="about" class="band band-about" aria-labelledby="about-title">
+          <div class="band-inner">
+            <h2 id="about-title" data-i18n="aboutTitle">About the community</h2>
+            <p data-i18n="aboutBody">
+              We are the QSS parents community: families who follow the school’s published rules, keep each other informed, and work with the committee on what the rules already allow.
+            </p>
+          </div>
+        </section>
 
-    <section id="panel-library" class="panel" hidden></section>
-    <section id="panel-doc" class="panel" hidden></section>
-  </main>
+        <section id="mission" class="band band-mission" aria-labelledby="mission-title">
+          <div class="band-inner">
+            <h2 id="mission-title" data-i18n="missionTitle">Our mission</h2>
+            <p data-i18n="missionBody">
+              Make the committee’s laws and decisions easy to check. Ask here first so we spend our time on work that is allowed — and that we are not already doing.
+            </p>
+          </div>
+        </section>
 
-  <footer>
-    <p id="footer-note">This page can only repeat what is in the published files. It can miss something or phrase it poorly. For a decision, read the original document or ask the committee.</p>
-  </footer>
+        <section id="tasks" class="band band-tasks" aria-labelledby="tasks-title">
+          <div class="band-inner">
+            <h2 id="tasks-title" data-i18n="tasksTitle">Current work</h2>
+            <p class="band-lead" data-i18n="tasksLead">
+              What the committee is focused on right now. Ask the assistant if your topic is already covered.
+            </p>
+            <div id="task-list" class="task-list"></div>
+          </div>
+        </section>
+      </section>
 
-  <noscript>
-    <p class="noscript">This knowledge base needs JavaScript to search the published documents.</p>
-  </noscript>
-  <script src="./config.js"></script>
-  <script type="module" src="./js/app.js"></script>
-</body>
+      <section id="panel-library" class="panel panel-library" data-panel="library" hidden aria-labelledby="library-title">
+        <div class="library-intro">
+          <h1 id="library-title" data-i18n="libraryTitle">Library</h1>
+          <p data-i18n="libraryLead">Browse every page in the published knowledge base.</p>
+        </div>
+        <div id="library-list" class="library-list"></div>
+      </section>
+
+      <section id="panel-page" class="panel panel-page" data-panel="page" hidden aria-labelledby="page-title">
+        <article class="wiki-article">
+          <a class="back-link" href="#/library" data-i18n="backLibrary">← Back to library</a>
+          <h1 id="page-title"></h1>
+          <p id="page-meta" class="page-meta"></p>
+          <div id="page-body" class="page-body"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p data-i18n="footer">
+        Built from the committee’s published documents. The assistant does not invent rules.
+      </p>
+    </footer>
+
+    <noscript>
+      <p style="max-width: 40rem; margin: 1rem auto; padding: 0 1.25rem">
+        This knowledge base needs JavaScript to search the published documents.
+      </p>
+    </noscript>
+    <script src="./config.js"></script>
+    <script type="module" src="./js/app.js"></script>
+  </body>
 </html>
