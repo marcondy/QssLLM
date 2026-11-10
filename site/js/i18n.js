@@ -45,6 +45,8 @@ export const STRINGS = {
     notFound: "That page is not in the published files.",
     footer: "Built from the committee’s published documents. The assistant does not invent rules.",
     sampleBanner: "Sample documents for a local preview. These are not QSS Parent Committee decisions.",
+    crossLead:
+      "These published passages may be in another language than your question. Read them below. A written answer in your language appears when Gemini can use them.",
   },
   ar: {
     brand: "لجنة الأهل — QSS",
@@ -90,6 +92,8 @@ export const STRINGS = {
     notFound: "هذه الصفحة غير موجودة في الملفات المنشورة.",
     footer: "مبني من وثائق اللجنة المنشورة. المساعد لا يخترع قواعد.",
     sampleBanner: "وثائق تجريبية لمعاينة محلية. ليست قرارات لجنة الأهل في QSS.",
+    crossLead:
+      "قد تكون هذه المقاطع المنشورة بلغة غير لغة سؤالك. اقرأها أدناه. تظهر صياغة مكتوبة بلغتك عندما يستطيع Gemini استخدامها.",
   },
   fr: {
     brand: "Comité des parents QSS",
@@ -138,6 +142,8 @@ export const STRINGS = {
     notFound: "Cette page ne fait pas partie des fichiers publiés.",
     footer: "Construit à partir des documents publiés du comité. L’assistant n’invente pas de règles.",
     sampleBanner: "Documents d’exemple pour un aperçu local. Ce ne sont pas des décisions du comité des parents QSS.",
+    crossLead:
+      "Ces passages publiés peuvent être dans une autre langue que votre question. Lisez-les ci-dessous. Une réponse rédigée dans votre langue s’affiche lorsque Gemini peut les utiliser.",
   },
 };
 

@@ -186,7 +186,8 @@ async function onSubmit(event) {
 
   const chunks = state.corpus.chunks || [];
   const query = searchQuery(state.previousQuestions, question);
-  const hits = chunks.length ? retrieve(chunks, query) : [];
+  const hasKey = Boolean(config.apiKey) && asksToday() < DAILY_LIMIT;
+  const hits = chunks.length ? retrieve(chunks, query, { limit: 8, allowCrossLingual: true }) : [];
   state.previousQuestions.push(question);
 
   try {
@@ -198,8 +199,9 @@ async function onSubmit(event) {
       showAnswer({ status: "", body: localAnswer("nomatch", state.lang), sources: [] });
       return;
     }
-    if (!config.apiKey || asksToday() >= DAILY_LIMIT) {
-      const status = !config.apiKey ? t().answerLocal : t().answerQuota;
+    if (!hasKey) {
+      const cross = hits.some((hit) => hit.crossLingual);
+      const status = !config.apiKey ? (cross ? t().crossLead : t().answerLocal) : t().answerQuota;
       showAnswer({
         status,
         body: hits.map((hit) => hit.text).join("\n\n"),
