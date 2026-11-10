@@ -36,6 +36,8 @@ export const STRINGS = {
     footer:
       "This page can only repeat what is in the published files. It can miss something or phrase it poorly. For a decision, read the original document or ask the committee.",
     broadLead: "Here is what the latest published pages say.",
+    crossLead:
+      "These published passages may be in another language than your question. Read them below. A written answer in your language appears when Gemini can use them.",
     download: "Download the original file",
     collected: "Collected",
     guides: "Guides",
@@ -77,6 +79,8 @@ export const STRINGS = {
     suggested: "جرّب سؤالاً",
     footer: "هذه الصفحة تعيد فقط ما هو موجود في الملفات المنشورة. قد يفوتها شيء أو تصوغه بشكل ناقص. للقرار، اقرأ الوثيقة الأصلية أو اسأل اللجنة.",
     broadLead: "هذا ما تقوله أحدث الصفحات المنشورة.",
+    crossLead:
+      "قد تكون هذه المقاطع المنشورة بلغة غير لغة سؤالك. اقرأها أدناه. تظهر صياغة مكتوبة بلغتك عندما يستطيع Gemini استخدامها.",
     download: "تنزيل الملف الأصلي",
     collected: "تاريخ الجمع",
     guides: "صفحات ملخّصة",
@@ -121,6 +125,8 @@ export const STRINGS = {
     footer:
       "Cette page ne peut répéter que ce qui figure dans les fichiers publiés. Elle peut en oublier ou mal le formuler. Pour une décision, lisez le document original ou demandez au comité.",
     broadLead: "Voici ce que disent les pages publiées les plus récentes.",
+    crossLead:
+      "Ces passages publiés peuvent être dans une autre langue que votre question. Lisez-les ci-dessous. Une réponse rédigée dans votre langue s'affiche lorsque Gemini peut les utiliser.",
     download: "Télécharger le fichier original",
     collected: "Collecté le",
     guides: "Fiches",
