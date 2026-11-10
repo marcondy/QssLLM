@@ -12,8 +12,9 @@ export const STRINGS = {
       "Check what we are already working on, and what the published rules allow, before writing to the committee.",
     askLabel: "Your question",
     askPlaceholder: "Can we do this under the rules? Are you already working on it?",
-    askSubmit: "Ask the assistant",
-    askHint: "Answers come only from published committee documents. Ask in English, Arabic, or French.",
+    askSubmit: "Send",
+    askHint: "Answers come only from published committee documents. Ask in English, Arabic, or French. Enter to send, Shift+Enter for a new line.",
+    newChat: "New chat",
     suggestionsLabel: "Try asking",
     suggestions: [
       "Can the parents committee do this under the published rules?",
@@ -60,8 +61,9 @@ export const STRINGS = {
     heroLead: "تحقّق ممّا نعمل عليه الآن، وممّا تسمح به الأنظمة المنشورة، قبل مراسلة اللجنة.",
     askLabel: "سؤالك",
     askPlaceholder: "هل يمكننا فعل هذا وفق الأنظمة؟ هل تعملون عليه أصلًا؟",
-    askSubmit: "اسأل المساعد",
-    askHint: "الإجابات من وثائق اللجنة المنشورة فقط. اسأل بالعربية أو الإنجليزية أو الفرنسية.",
+    askSubmit: "أرسل",
+    askHint: "الإجابات من وثائق اللجنة المنشورة فقط. اسأل بالعربية أو الإنجليزية أو الفرنسية. Enter للإرسال، Shift+Enter لسطر جديد.",
+    newChat: "محادثة جديدة",
     suggestionsLabel: "جرّب أن تسأل",
     suggestions: [
       "هل تستطيع لجنة الأهل فعل هذا وفق الأنظمة المنشورة؟",
@@ -108,9 +110,10 @@ export const STRINGS = {
       "Vérifiez ce sur quoi nous travaillons déjà, et ce que permettent les règles publiées, avant d’écrire au comité.",
     askLabel: "Votre question",
     askPlaceholder: "Pouvons-nous le faire selon les règles ? Travaillez-vous déjà dessus ?",
-    askSubmit: "Demander à l’assistant",
+    askSubmit: "Envoyer",
     askHint:
-      "Les réponses viennent uniquement des documents publiés du comité. Posez la question en français, anglais ou arabe.",
+      "Les réponses viennent uniquement des documents publiés du comité. Posez la question en français, anglais ou arabe. Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne.",
+    newChat: "Nouvelle conversation",
     suggestionsLabel: "Essayez de demander",
     suggestions: [
       "Le comité des parents peut-il faire cela selon les règles publiées ?",

@@ -1,9 +1,17 @@
 import { STRINGS, detectLanguage } from "./i18n.js";
 import { renderMarkdown, escapeHtml, safeDocPath } from "./markdown.js";
 import { retrieve, searchQuery, contentTokens } from "./retrieve.js";
-import { localAnswer, geminiBody, parseAnswer, answerTextFromGemini } from "./ground.js";
+import {
+  localAnswer,
+  geminiBody,
+  parseAnswer,
+  answerTextFromGemini,
+  detectQuestionLanguage,
+  HISTORY_TURN_LIMIT,
+} from "./ground.js";
 
 const DAILY_LIMIT = 20;
+const SESSION_KEY = "qss-chat-messages";
 const config = window.QSS_CONFIG || { apiKey: "", model: "gemini-3.8-flash", sample: false };
 
 const state = {
@@ -11,6 +19,7 @@ const state = {
   corpus: { articles: [], chunks: [], sample: false },
   content: { tasks: {} },
   busy: false,
+  messages: [],
   previousQuestions: [],
 };
 
@@ -18,10 +27,10 @@ const els = {
   form: document.getElementById("ask-form"),
   question: document.getElementById("question"),
   suggestions: document.getElementById("suggestions"),
-  answer: document.getElementById("answer"),
-  answerStatus: document.getElementById("answer-status"),
-  answerBody: document.getElementById("answer-body"),
-  answerSources: document.getElementById("answer-sources"),
+  thread: document.getElementById("thread"),
+  chatStage: document.getElementById("chat-stage"),
+  newChat: document.getElementById("new-chat"),
+  hero: document.querySelector(".hero"),
   taskList: document.getElementById("task-list"),
   libraryList: document.getElementById("library-list"),
   pageTitle: document.getElementById("page-title"),
@@ -36,14 +45,18 @@ init();
 
 async function init() {
   state.lang = detectLanguage();
+  loadSession();
   applyLanguage();
   els.form.addEventListener("submit", onSubmit);
+  els.question.addEventListener("keydown", onComposerKey);
+  els.newChat.addEventListener("click", clearChat);
   document.querySelectorAll("[data-lang]").forEach((button) => {
     button.addEventListener("click", () => {
       state.lang = button.dataset.lang;
       localStorage.setItem("qss-lang", state.lang);
       applyLanguage();
       renderTasks();
+      renderThread();
       renderRoute();
     });
   });
@@ -64,7 +77,47 @@ async function init() {
   await Promise.all([loadCorpus(), loadContent()]);
   renderSuggestions();
   renderTasks();
+  renderThread();
   renderRoute();
+}
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    state.messages = parsed.filter((item) => item && (item.role === "user" || item.role === "assistant"));
+    state.previousQuestions = state.messages.filter((item) => item.role === "user").map((item) => item.text);
+  } catch {
+    state.messages = [];
+  }
+}
+
+function saveSession() {
+  const durable = state.messages
+    .filter((item) => item.kind !== "pending")
+    .map((item) => ({
+      role: item.role,
+      text: item.text || "",
+      kind: item.kind,
+      sources: (item.sources || []).map((source) => ({
+        path: source.path,
+        title: source.title,
+        text: source.text,
+      })),
+      query: item.query || "",
+      askLang: item.askLang,
+    }));
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(durable));
+}
+
+function clearChat() {
+  state.messages = [];
+  state.previousQuestions = [];
+  sessionStorage.removeItem(SESSION_KEY);
+  renderThread();
+  els.question.focus();
 }
 
 async function loadCorpus() {
@@ -85,8 +138,8 @@ async function loadContent() {
   }
 }
 
-function t() {
-  return STRINGS[state.lang] || STRINGS.en;
+function t(lang = state.lang) {
+  return STRINGS[lang] || STRINGS.en;
 }
 
 function applyLanguage() {
@@ -112,6 +165,12 @@ function applyLanguage() {
 function renderSuggestions() {
   const text = t();
   const items = text.suggestions || [];
+  const box = els.suggestions?.closest(".suggestions");
+  if (state.messages.length) {
+    if (box) box.hidden = true;
+    return;
+  }
+  if (box) box.hidden = false;
   els.suggestions.innerHTML = items
     .map(
       (question) =>
@@ -173,16 +232,28 @@ function renderRoute() {
   }
 }
 
+function onComposerKey(event) {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    els.form.requestSubmit();
+  }
+}
+
 async function onSubmit(event) {
   event.preventDefault();
   if (state.busy) return;
   const question = els.question.value.trim();
   if (!question) return;
 
+  const askLang = detectQuestionLanguage(question, state.lang);
   const submit = els.form.querySelector('button[type="submit"]');
   state.busy = true;
   if (submit) submit.disabled = true;
-  showAnswer({ status: t().answerThinking, body: "", sources: [] });
+  els.question.value = "";
+
+  state.messages.push({ role: "user", text: question, askLang });
+  state.messages.push({ role: "assistant", kind: "pending", askLang });
+  renderThread();
 
   const chunks = state.corpus.chunks || [];
   const query = searchQuery(state.previousQuestions, question);
@@ -190,27 +261,45 @@ async function onSubmit(event) {
   const hits = chunks.length ? retrieve(chunks, query, { limit: 8, allowCrossLingual: true }) : [];
   state.previousQuestions.push(question);
 
+  const history = historyForModel();
+
   try {
     if (!chunks.length) {
-      showAnswer({ status: "", body: localAnswer("empty", state.lang), sources: [] });
+      replacePending({
+        role: "assistant",
+        kind: "local",
+        text: localAnswer("empty", askLang),
+        askLang,
+      });
       return;
     }
     if (!hits.length) {
-      showAnswer({ status: "", body: localAnswer("nomatch", state.lang), sources: [] });
+      replacePending({
+        role: "assistant",
+        kind: "local",
+        text: localAnswer("nomatch", askLang),
+        askLang,
+      });
       return;
     }
     if (!hasKey) {
       const cross = hits.some((hit) => hit.crossLingual);
-      const status = !config.apiKey ? (cross ? t().crossLead : t().answerLocal) : t().answerQuota;
-      showAnswer({
-        status,
-        body: hits.map((hit) => hit.text).join("\n\n"),
+      const lead = !config.apiKey
+        ? cross
+          ? t(askLang).crossLead || localAnswer("passages", askLang)
+          : localAnswer("passages", askLang)
+        : localAnswer("quota", askLang);
+      replacePending({
+        role: "assistant",
+        kind: "passages",
+        text: lead,
         sources: hits,
         query,
+        askLang,
       });
       return;
     }
-    const payload = await askGemini(question, hits);
+    const payload = await askGemini(question, hits, history);
     const parsed = parseAnswer(
       answerTextFromGemini(payload),
       hits.map((hit) => hit.path),
@@ -219,45 +308,100 @@ async function onSubmit(event) {
     const cited = hits.filter(
       (hit) => parsed.refused || parsed.citations.includes(hit.path) || parsed.citations.length === 0,
     );
-    showAnswer({
-      status: "",
-      bodyHtml: renderMarkdown(parsed.answer),
+    replacePending({
+      role: "assistant",
+      kind: "answer",
+      text: parsed.answer,
       sources: cited,
       query,
+      askLang,
     });
   } catch (error) {
-    showAnswer({
-      status: `${t().answerError} ${error.message || ""}`.trim(),
-      body: hits.map((hit) => hit.text).join("\n\n"),
+    replacePending({
+      role: "assistant",
+      kind: "passages",
+      text: `${t(askLang).answerError} ${error.message || ""}`.trim(),
       sources: hits,
       query,
+      askLang,
     });
   } finally {
     state.busy = false;
     if (submit) submit.disabled = false;
-    els.answer.scrollIntoView({ behavior: "smooth", block: "start" });
+    saveSession();
+    els.question.focus();
   }
 }
 
-function showAnswer({ status, body = "", bodyHtml = "", sources = [], query = "" }) {
-  els.answer.hidden = false;
-  els.answerStatus.textContent = status || "";
-  if (bodyHtml) els.answerBody.innerHTML = bodyHtml;
-  else els.answerBody.textContent = body;
-  if (!sources.length) {
-    els.answerSources.innerHTML = "";
+function historyForModel() {
+  const completed = state.messages.filter(
+    (item) =>
+      item.kind !== "pending" &&
+      ((item.role === "user" && item.text) ||
+        (item.role === "assistant" && item.text && item.kind !== "pending")),
+  );
+  // Drop the user message we just appended (last user) — geminiBody adds the current question.
+  const withoutCurrent = completed.slice(0, -1);
+  return withoutCurrent.slice(-HISTORY_TURN_LIMIT).map((item) => ({
+    role: item.role === "assistant" ? "assistant" : "user",
+    text: item.text,
+  }));
+}
+
+function replacePending(message) {
+  const index = state.messages.findIndex((item) => item.kind === "pending");
+  if (index === -1) state.messages.push(message);
+  else state.messages.splice(index, 1, message);
+  renderThread();
+  saveSession();
+}
+
+function renderThread() {
+  const chatting = state.messages.length > 0;
+  els.chatStage.classList.toggle("is-chatting", chatting);
+  if (els.hero) els.hero.classList.toggle("is-collapsed", chatting);
+  els.newChat.hidden = !chatting;
+  renderSuggestions();
+
+  if (!chatting) {
+    els.thread.innerHTML = "";
     return;
   }
-  const label = escapeHtml(t().answerSources);
-  els.answerSources.innerHTML =
-    `<p><strong>${label}</strong></p>` +
-    sources
-      .map((source) => {
-        const href = `#/page?path=${encodeURIComponent(source.path)}`;
-        const snippet = highlight(source.text.slice(0, 220), query);
-        return `<div><a href="${href}">${escapeHtml(source.title || source.path)}</a><p>${snippet}${source.text.length > 220 ? "…" : ""}</p></div>`;
-      })
-      .join("");
+
+  els.thread.innerHTML = state.messages
+    .map((message, index) => {
+      const delay = `style="--delay:${Math.min(index * 40, 160)}ms"`;
+      if (message.role === "user") {
+        return `<div class="bubble user" ${delay}><p>${escapeHtml(message.text)}</p></div>`;
+      }
+      const askLang = message.askLang || state.lang;
+      if (message.kind === "pending") {
+        return `<div class="bubble assistant pending" ${delay}><p class="lead">${escapeHtml(t(askLang).answerThinking)}</p></div>`;
+      }
+      const body =
+        message.kind === "answer"
+          ? `<div class="doc-body">${renderMarkdown(message.text || "")}</div>`
+          : `<p>${escapeHtml(message.text || "")}</p>`;
+      return `<div class="bubble assistant" ${delay} dir="${askLang === "ar" ? "rtl" : "ltr"}">${body}${sourceBlock(message, askLang)}</div>`;
+    })
+    .join("");
+
+  const last = els.thread.lastElementChild;
+  if (last) last.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function sourceBlock(message, askLang) {
+  const sources = message.sources || [];
+  if (!sources.length) return "";
+  const label = escapeHtml(t(askLang).answerSources);
+  const cards = sources
+    .map((source) => {
+      const href = `#/page?path=${encodeURIComponent(source.path)}`;
+      const snippet = highlight((source.text || "").slice(0, 180), message.query || "");
+      return `<a class="source-link" href="${href}"><strong>${escapeHtml(source.title || source.path)}</strong><span>${snippet}${(source.text || "").length > 180 ? "…" : ""}</span></a>`;
+    })
+    .join("");
+  return `<details class="sources" open><summary>${label}</summary><div class="source-list">${cards}</div></details>`;
 }
 
 function highlight(text, query) {
@@ -269,8 +413,8 @@ function highlight(text, query) {
   return safe;
 }
 
-async function askGemini(question, hits) {
-  const body = geminiBody(question, hits);
+async function askGemini(question, hits, history) {
+  const body = geminiBody(question, hits, history);
   const models = [...new Set([config.model, "gemini-3.8-flash", "gemini-flash-latest"].filter(Boolean))];
   let last = null;
   for (const model of models) {

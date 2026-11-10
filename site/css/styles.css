@@ -184,7 +184,33 @@ main {
   gap: 2rem;
   align-items: end;
   min-height: calc(100vh - 5.5rem);
-  padding: 2.5rem 0 3rem;
+  padding: 2.5rem 0 1.5rem;
+  transition: min-height 280ms ease, padding 280ms ease;
+}
+
+.hero.is-collapsed {
+  min-height: 0;
+  padding: 1.25rem 0 0.5rem;
+  align-items: start;
+}
+
+.hero.is-collapsed .hero-visual {
+  display: none;
+}
+
+.hero.is-collapsed .hero-lead,
+.hero.is-collapsed .suggestions {
+  display: none;
+}
+
+.hero.is-collapsed .hero-brand {
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  margin-bottom: 0.35rem;
+}
+
+.hero.is-collapsed h1 {
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  margin-bottom: 0;
 }
 
 .hero-brand {
@@ -213,17 +239,30 @@ main {
   font-size: 1.08rem;
 }
 
+.ask-form.composer {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 3;
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(30, 86, 176, 0.22);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
 .ask-form textarea {
   width: 100%;
   resize: vertical;
-  min-height: 6.5rem;
-  border: 1px solid rgba(30, 86, 176, 0.28);
-  border-radius: var(--radius);
-  padding: 1rem 1.1rem;
+  min-height: 4.2rem;
+  max-height: 12rem;
+  border: 1px solid rgba(30, 86, 176, 0.22);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
   font: inherit;
   color: var(--charcoal);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .ask-form textarea:focus {
@@ -356,73 +395,129 @@ main {
   }
 }
 
-.answer {
+.chat-stage {
   margin: 0 0 2.5rem;
-  padding: 1.4rem 1.5rem 1.6rem;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.78);
+}
+
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 2rem;
+  margin-bottom: 0.35rem;
+}
+
+.btn-ghost {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--blue-deep);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  border-color: var(--blue);
+  background: rgba(30, 86, 176, 0.08);
+}
+
+.thread {
+  display: grid;
+  gap: 0.85rem;
+  max-height: min(52vh, 28rem);
+  overflow-y: auto;
+  padding: 0.25rem 0.15rem 0.75rem;
+  scroll-behavior: smooth;
+}
+
+.chat-stage:not(.is-chatting) .thread {
+  display: none;
+}
+
+.bubble {
+  max-width: min(42rem, 92%);
+  padding: 0.9rem 1.05rem;
+  border-radius: 16px;
+  animation: rise-in 360ms ease both;
+  animation-delay: var(--delay, 0ms);
+}
+
+.bubble p {
+  margin: 0;
+}
+
+.bubble.user {
+  justify-self: end;
+  background: var(--blue);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
+
+.bubble.assistant {
+  justify-self: start;
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--line);
   border-inline-start: 4px solid var(--blue);
-  animation: rise-in 420ms ease both;
+  border-bottom-left-radius: 6px;
+  color: var(--charcoal);
 }
 
-.answer[hidden] {
-  display: none !important;
-}
-
-.answer-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.6rem 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.answer-head h2 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  color: var(--blue-deep);
-}
-
-.answer-status {
-  margin: 0;
+.bubble.pending .lead {
   color: var(--ink-soft);
-  font-size: 0.92rem;
 }
 
-.answer-body {
+.bubble .doc-body {
   white-space: pre-wrap;
 }
 
-.answer-body mark {
+.bubble mark,
+.sources mark {
   background: rgba(240, 196, 32, 0.45);
   color: inherit;
   padding: 0 0.12em;
 }
 
-.answer-sources {
-  margin-top: 1rem;
+.sources {
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.sources summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--blue-deep);
+}
+
+.source-list {
   display: grid;
   gap: 0.55rem;
+  margin-top: 0.55rem;
 }
 
-.answer-sources a {
+.source-link {
+  display: grid;
+  gap: 0.2rem;
   text-decoration: none;
-  color: var(--blue-deep);
-  font-weight: 600;
+  color: inherit;
+  padding: 0.35rem 0;
 }
 
-.answer-sources a:hover {
-  text-decoration: underline;
+.source-link strong {
+  color: var(--blue-deep);
+}
+
+.source-link span {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
 }
 
 .answer-next {
-  margin: 1.15rem 0 0;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--line);
+  margin: 0.85rem 0 0;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .band {

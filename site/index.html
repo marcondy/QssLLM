@@ -50,23 +50,6 @@
             <p class="hero-lead" data-i18n="heroLead">
               Check what we are already working on, and what the published rules allow, before writing to the committee.
             </p>
-            <form id="ask-form" class="ask-form" autocomplete="off">
-              <label class="sr-only" for="question" data-i18n="askLabel">Your question</label>
-              <textarea
-                id="question"
-                name="question"
-                rows="3"
-                required
-                data-i18n-placeholder="askPlaceholder"
-                placeholder="Can we do this under the rules? Are you already working on it?"
-              ></textarea>
-              <div class="ask-actions">
-                <button type="submit" class="btn-primary" data-i18n="askSubmit">Ask the assistant</button>
-                <p class="ask-hint" data-i18n="askHint">
-                  Answers come only from published committee documents. Ask in English, Arabic, or French.
-                </p>
-              </div>
-            </form>
             <div class="suggestions" aria-label="Starter questions">
               <p class="suggestions-label" data-i18n="suggestionsLabel">Try asking</p>
               <div id="suggestions" class="suggestion-list"></div>
@@ -84,13 +67,28 @@
           </div>
         </div>
 
-        <section id="answer" class="answer" hidden aria-live="polite">
-          <div class="answer-head">
-            <h2 data-i18n="answerTitle">Answer</h2>
-            <p id="answer-status" class="answer-status"></p>
+        <section id="chat-stage" class="chat-stage" aria-label="Conversation">
+          <div class="chat-toolbar">
+            <button type="button" id="new-chat" class="btn-ghost" data-i18n="newChat" hidden>New chat</button>
           </div>
-          <div id="answer-body" class="answer-body"></div>
-          <div id="answer-sources" class="answer-sources"></div>
+          <div id="thread" class="thread" aria-live="polite"></div>
+          <form id="ask-form" class="ask-form composer" autocomplete="off">
+            <label class="sr-only" for="question" data-i18n="askLabel">Your question</label>
+            <textarea
+              id="question"
+              name="question"
+              rows="2"
+              required
+              data-i18n-placeholder="askPlaceholder"
+              placeholder="Can we do this under the rules? Are you already working on it?"
+            ></textarea>
+            <div class="ask-actions">
+              <button type="submit" class="btn-primary" data-i18n="askSubmit">Ask the assistant</button>
+              <p class="ask-hint" data-i18n="askHint">
+                Answers come only from published committee documents. Ask in English, Arabic, or French.
+              </p>
+            </div>
+          </form>
           <p class="answer-next" data-i18n="answerNext">
             Still need the committee? Write to us only after this page cannot answer from the published rules.
           </p>
