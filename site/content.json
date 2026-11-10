@@ -1,0 +1,34 @@
+{
+  "tasks": {
+    "en": [
+      {
+        "title": "Keep the published rules easy to check",
+        "body": "We are organizing the parents-committee laws and school rules so families can ask here first, before writing to us."
+      },
+      {
+        "title": "Answer from documents, not guesses",
+        "body": "This page only repeats what we publish. If a rule or decision is not written here yet, the assistant will say so."
+      }
+    ],
+    "ar": [
+      {
+        "title": "إبقاء الأنظمة المنشورة سهلة المراجعة",
+        "body": "نرتّب قوانين وأنظمة لجان الأهل حتى يتمكّن الأهل من السؤال هنا أولاً قبل مراسلتنا."
+      },
+      {
+        "title": "الإجابة من الوثائق لا من التخمين",
+        "body": "هذه الصفحة تعيد فقط ما ننشره. إذا لم يكن النظام أو القرار مكتوبًا هنا بعد، سيقول المساعد ذلك."
+      }
+    ],
+    "fr": [
+      {
+        "title": "Rendre les règles publiées faciles à consulter",
+        "body": "Nous organisons les lois et règles du comité des parents pour que les familles puissent demander ici d'abord, avant de nous écrire."
+      },
+      {
+        "title": "Répondre à partir des documents, sans inventer",
+        "body": "Cette page ne répète que ce que nous publions. Si une règle ou une décision n'est pas encore écrite ici, l'assistant le dira."
+      }
+    ]
+  }
+}

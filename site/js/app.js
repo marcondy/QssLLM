@@ -4,38 +4,32 @@ import { retrieve, searchQuery, contentTokens } from "./retrieve.js";
 import { localAnswer, geminiBody, parseAnswer, answerTextFromGemini } from "./ground.js";
 
 const DAILY_LIMIT = 20;
-const INBOX_URL = "https://github.com/marcondy/QssLLM/tree/main/inbox";
 const config = window.QSS_CONFIG || { apiKey: "", model: "gemini-3.8-flash", sample: false };
 
 const state = {
   lang: "en",
   corpus: { articles: [], chunks: [], sample: false },
-  messages: [],
+  content: { tasks: {} },
   busy: false,
   previousQuestions: [],
 };
 
 const els = {
-  name: document.getElementById("site-name"),
-  tagline: document.getElementById("site-tagline"),
-  banner: document.getElementById("sample-banner"),
-  heroTitle: document.getElementById("hero-title"),
-  scopeTitle: document.getElementById("scope-title"),
-  scopeBody: document.getElementById("scope-body"),
-  scopeNo: document.getElementById("scope-no"),
-  stage: document.getElementById("ask-stage"),
-  suggestions: document.getElementById("suggestions"),
-  thread: document.getElementById("thread"),
   form: document.getElementById("ask-form"),
   question: document.getElementById("question"),
-  send: document.getElementById("send"),
-  sendLabel: document.getElementById("send-label"),
-  fineprint: document.getElementById("fineprint"),
-  emptyNote: document.getElementById("empty-note"),
+  suggestions: document.getElementById("suggestions"),
+  answer: document.getElementById("answer"),
+  answerStatus: document.getElementById("answer-status"),
+  answerBody: document.getElementById("answer-body"),
+  answerSources: document.getElementById("answer-sources"),
+  taskList: document.getElementById("task-list"),
+  libraryList: document.getElementById("library-list"),
+  pageTitle: document.getElementById("page-title"),
+  pageMeta: document.getElementById("page-meta"),
+  pageBody: document.getElementById("page-body"),
   ask: document.getElementById("panel-ask"),
   library: document.getElementById("panel-library"),
-  doc: document.getElementById("panel-doc"),
-  footer: document.getElementById("footer-note"),
+  page: document.getElementById("panel-page"),
 };
 
 init();
@@ -49,26 +43,46 @@ async function init() {
       state.lang = button.dataset.lang;
       localStorage.setItem("qss-lang", state.lang);
       applyLanguage();
+      renderTasks();
       renderRoute();
     });
   });
-  window.addEventListener("hashchange", () => {
-    restartPanelMotion();
-    renderRoute();
+  document.querySelectorAll("[data-scroll]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const id = link.getAttribute("data-scroll");
+      const route = parseRoute();
+      if (route.name !== "ask") {
+        location.hash = `#/${id}`;
+        return;
+      }
+      event.preventDefault();
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.replaceState(null, "", `#${id}`);
+    });
   });
+  window.addEventListener("hashchange", renderRoute);
+  await Promise.all([loadCorpus(), loadContent()]);
+  renderSuggestions();
+  renderTasks();
+  renderRoute();
+}
+
+async function loadCorpus() {
   try {
     const response = await fetch("./corpus.json");
     if (response.ok) state.corpus = await response.json();
   } catch {
     state.corpus = { articles: [], chunks: [], sample: false };
   }
-  if (state.corpus.sample || config.sample) {
-    els.banner.hidden = false;
-    els.banner.textContent = STRINGS[state.lang].sampleBanner;
+}
+
+async function loadContent() {
+  try {
+    const response = await fetch("./content.json");
+    if (response.ok) state.content = await response.json();
+  } catch {
+    state.content = { tasks: {} };
   }
-  renderSuggestions();
-  renderEmptyNote();
-  renderRoute();
 }
 
 function t() {
@@ -80,109 +94,83 @@ function applyLanguage() {
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === "ar" ? "rtl" : "ltr";
   document.body.dir = document.documentElement.dir;
-  document.title = text.name;
-  els.name.textContent = text.name;
-  els.tagline.textContent = text.tagline;
-  els.heroTitle.textContent = text.heroTitle;
-  els.scopeTitle.textContent = text.scopeTitle;
-  els.scopeBody.textContent = text.scopeBody;
-  els.scopeNo.textContent = text.scopeNo;
-  els.question.placeholder = text.askPlaceholder;
-  els.question.setAttribute("aria-label", text.ask);
-  els.sendLabel.textContent = text.send;
-  els.footer.textContent = text.footer;
-  document.querySelector('[data-nav="ask"]').textContent = text.ask;
-  document.querySelector('[data-nav="library"]').textContent = text.library;
+  document.title = text.brand;
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    const key = node.getAttribute("data-i18n");
+    if (text[key] != null) node.textContent = text[key];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+    const key = node.getAttribute("data-i18n-placeholder");
+    if (text[key] != null) node.setAttribute("placeholder", text[key]);
+  });
   document.querySelectorAll("[data-lang]").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.lang === state.lang ? "true" : "false");
   });
-  if (!els.banner.hidden) els.banner.textContent = text.sampleBanner;
   renderSuggestions();
-  renderEmptyNote();
-  renderThread();
-  renderFineprint();
-}
-
-function renderFineprint() {
-  const text = t();
-  if (!config.apiKey) {
-    els.fineprint.textContent = text.privacyLocal;
-    return;
-  }
-  els.fineprint.textContent = `${text.privacy} ${text.remaining}: ${asksToday()}/${DAILY_LIMIT}.`;
 }
 
 function renderSuggestions() {
-  if (state.messages.length) {
-    els.suggestions.hidden = true;
-    return;
-  }
-  const articles = (state.corpus.articles || []).filter((article) => article.kind === "wiki").slice(0, 3);
-  const pool = articles.length ? articles : (state.corpus.articles || []).slice(0, 3);
-  if (!pool.length) {
-    els.suggestions.hidden = true;
-    els.suggestions.innerHTML = "";
-    return;
-  }
   const text = t();
-  els.suggestions.hidden = false;
-  els.suggestions.innerHTML = pool
-    .map((article, index) => `<button type="button" style="--delay:${180 + index * 70}ms" data-q="${escapeHtml(suggestion(article.title))}">${escapeHtml(suggestion(article.title))}</button>`)
+  const items = text.suggestions || [];
+  els.suggestions.innerHTML = items
+    .map(
+      (question) =>
+        `<button type="button" class="suggestion" data-q="${escapeHtml(question)}">${escapeHtml(question)}</button>`,
+    )
     .join("");
   els.suggestions.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
       els.question.value = button.dataset.q;
-      els.form.requestSubmit();
+      els.question.focus();
     });
   });
-  els.suggestions.insertAdjacentHTML("afterbegin", `<span class="sr-only">${escapeHtml(text.suggested)}</span>`);
 }
 
-function renderEmptyNote() {
-  if ((state.corpus.articles || []).length || state.messages.length) {
-    els.emptyNote.hidden = true;
-    els.emptyNote.innerHTML = "";
+function renderTasks() {
+  const tasks = (state.content.tasks && state.content.tasks[state.lang]) || state.content.tasks?.en || [];
+  if (!tasks.length) {
+    els.taskList.innerHTML = "";
     return;
   }
-  els.emptyNote.hidden = false;
-  els.emptyNote.innerHTML = `${escapeHtml(t().emptyLibraryBody)} <a href="${INBOX_URL}">${escapeHtml(t().openInbox)}</a>`;
+  els.taskList.innerHTML = tasks
+    .map(
+      (task) =>
+        `<article class="task-item"><h3>${escapeHtml(task.title || "")}</h3><p>${escapeHtml(task.body || "")}</p></article>`,
+    )
+    .join("");
 }
 
-function suggestion(title) {
-  if (state.lang === "ar") return `ماذا تقول الوثائق عن ${title}؟`;
-  if (state.lang === "fr") return `Que disent les documents au sujet de « ${title} » ?`;
-  return `What do the documents say about ${title}?`;
-}
-
-function restartPanelMotion() {
-  for (const panel of [els.ask, els.library, els.doc]) {
-    panel.classList.remove("panel");
-    void panel.offsetWidth;
-    panel.classList.add("panel");
-  }
+function parseRoute() {
+  const raw = (location.hash || "#/").replace(/^#/, "");
+  if (raw === "about" || raw === "mission" || raw === "tasks") return { name: "ask", scroll: raw };
+  const [path, query] = raw.split("?");
+  const params = new URLSearchParams(query || "");
+  if (path.startsWith("/page") || path.startsWith("/doc")) return { name: "page", path: params.get("path") || "" };
+  if (path.startsWith("/library")) return { name: "library" };
+  if (path.startsWith("/about")) return { name: "ask", scroll: "about" };
+  if (path.startsWith("/mission")) return { name: "ask", scroll: "mission" };
+  if (path.startsWith("/tasks")) return { name: "ask", scroll: "tasks" };
+  return { name: "ask" };
 }
 
 function renderRoute() {
   const route = parseRoute();
   els.ask.hidden = route.name !== "ask";
   els.library.hidden = route.name !== "library";
-  els.doc.hidden = route.name !== "doc";
-  for (const name of ["ask", "library"]) {
-    const link = document.querySelector(`[data-nav="${name}"]`);
-    if (route.name === name) link.setAttribute("aria-current", "page");
+  els.page.hidden = route.name !== "page";
+  els.ask.classList.toggle("is-active", route.name === "ask");
+  document.querySelectorAll("[data-route]").forEach((link) => {
+    const target = link.getAttribute("data-route");
+    if (target === route.name) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
-  }
+  });
   if (route.name === "library") renderLibrary();
-  if (route.name === "doc") renderDoc(route.path);
-}
-
-function parseRoute() {
-  const raw = (location.hash || "#/ask").replace(/^#/, "");
-  const [path, query] = raw.split("?");
-  const params = new URLSearchParams(query || "");
-  if (path.startsWith("/doc")) return { name: "doc", path: params.get("path") || "" };
-  if (path.startsWith("/library")) return { name: "library" };
-  return { name: "ask" };
+  if (route.name === "page") renderPage(route.path);
+  if (route.name === "ask" && route.scroll) {
+    requestAnimationFrame(() => {
+      document.getElementById(route.scroll)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 async function onSubmit(event) {
@@ -190,15 +178,11 @@ async function onSubmit(event) {
   if (state.busy) return;
   const question = els.question.value.trim();
   if (!question) return;
-  els.question.value = "";
-  els.stage.classList.add("is-chatting");
-  state.messages.push({ role: "user", text: question });
-  renderThread();
+
+  const submit = els.form.querySelector('button[type="submit"]');
   state.busy = true;
-  els.send.disabled = true;
-  const pending = { role: "assistant", kind: "pending" };
-  state.messages.push(pending);
-  renderThread();
+  if (submit) submit.disabled = true;
+  showAnswer({ status: t().answerThinking, body: "", sources: [] });
 
   const chunks = state.corpus.chunks || [];
   const query = searchQuery(state.previousQuestions, question);
@@ -208,108 +192,77 @@ async function onSubmit(event) {
 
   try {
     if (!chunks.length) {
-      replacePending({ role: "assistant", kind: "local", localKind: "empty" });
+      showAnswer({ status: "", body: localAnswer("empty", state.lang), sources: [] });
       return;
     }
     if (!hits.length) {
-      replacePending({ role: "assistant", kind: "local", localKind: "nomatch" });
+      showAnswer({ status: "", body: localAnswer("nomatch", state.lang), sources: [] });
       return;
     }
     if (!hasKey) {
       const cross = hits.some((hit) => hit.crossLingual);
-      replacePending({
-        role: "assistant",
-        kind: "passages",
-        lead: !config.apiKey ? (cross ? t().crossLead : t().passagesNoKey) : t().quota,
-        chunks: hits,
-        broad: hits.some((hit) => hit.broad),
+      const status = !config.apiKey ? (cross ? t().crossLead : t().answerLocal) : t().answerQuota;
+      showAnswer({
+        status,
+        body: hits.map((hit) => hit.text).join("\n\n"),
+        sources: hits,
         query,
       });
       return;
     }
     const payload = await askGemini(question, hits);
-    const parsed = parseAnswer(answerTextFromGemini(payload), hits.map((hit) => hit.path));
+    const parsed = parseAnswer(
+      answerTextFromGemini(payload),
+      hits.map((hit) => hit.path),
+    );
     recordAsk();
-    replacePending({
-      role: "assistant",
-      kind: "answer",
-      answer: parsed.answer,
-      chunks: hits.filter((hit) => parsed.refused || parsed.citations.includes(hit.path) || parsed.citations.length === 0),
+    const cited = hits.filter(
+      (hit) => parsed.refused || parsed.citations.includes(hit.path) || parsed.citations.length === 0,
+    );
+    showAnswer({
+      status: "",
+      bodyHtml: renderMarkdown(parsed.answer),
+      sources: cited,
       query,
-      broad: hits.some((hit) => hit.broad),
     });
   } catch (error) {
-    replacePending({
-      role: "assistant",
-      kind: "passages",
-      lead: `${t().error} ${error.message || ""}`.trim(),
-      chunks: hits,
+    showAnswer({
+      status: `${t().answerError} ${error.message || ""}`.trim(),
+      body: hits.map((hit) => hit.text).join("\n\n"),
+      sources: hits,
       query,
-      broad: hits.some((hit) => hit.broad),
     });
   } finally {
     state.busy = false;
-    els.send.disabled = false;
-    renderFineprint();
-    els.question.focus();
+    if (submit) submit.disabled = false;
+    els.answer.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
-function replacePending(message) {
-  const index = state.messages.findIndex((item) => item.kind === "pending");
-  if (index === -1) state.messages.push(message);
-  else state.messages.splice(index, 1, message);
-  renderThread();
-}
-
-function renderThread() {
-  const text = t();
-  if (state.messages.length) {
-    els.stage.classList.add("is-chatting");
-    els.suggestions.hidden = true;
-    els.emptyNote.hidden = true;
+function showAnswer({ status, body = "", bodyHtml = "", sources = [], query = "" }) {
+  els.answer.hidden = false;
+  els.answerStatus.textContent = status || "";
+  if (bodyHtml) els.answerBody.innerHTML = bodyHtml;
+  else els.answerBody.textContent = body;
+  if (!sources.length) {
+    els.answerSources.innerHTML = "";
+    return;
   }
-  els.thread.innerHTML = state.messages
-    .map((message, index) => {
-      const style = `style="--delay:${Math.min(index * 40, 160)}ms"`;
-      if (message.role === "user") return `<div class="bubble user" ${style}>${escapeHtml(message.text)}</div>`;
-      if (message.kind === "pending") {
-        return `<div class="bubble assistant pending" ${style}><p class="lead">${escapeHtml(text.thinking)}</p></div>`;
-      }
-      if (message.kind === "local") {
-        return `<div class="bubble assistant" ${style}><p>${escapeHtml(localAnswer(message.localKind, state.lang))}</p></div>`;
-      }
-      if (message.kind === "answer") {
-        return `<div class="bubble assistant" ${style}><div class="doc-body">${renderMarkdown(message.answer)}</div>${passageBlock(message, text)}</div>`;
-      }
-      return `<div class="bubble assistant" ${style}><p class="lead">${escapeHtml(message.lead || "")}</p>${passageBlock(message, text)}</div>`;
-    })
-    .join("");
-  const last = els.thread.lastElementChild;
-  if (last) last.scrollIntoView({ block: "center", inline: "nearest" });
-}
-
-function passageBlock(message, text) {
-  const chunks = message.chunks || [];
-  if (!chunks.length) return "";
-  const leadText = message.chunks?.some((chunk) => chunk.crossLingual)
-    ? text.crossLead
-    : message.broad
-      ? text.broadLead
-      : "";
-  const lead = leadText ? `<p class="lead">${escapeHtml(leadText)}</p>` : "";
-  const cards = chunks
-    .map((chunk) => {
-      const href = `#/doc?path=${encodeURIComponent(chunk.path)}`;
-      return `<article class="passage"><h3><a href="${href}">${escapeHtml(chunk.title)}</a></h3><p class="meta">${escapeHtml(chunk.heading || text.sourceDoc)}</p><p class="snippet">${highlight(chunk.text, message.query || "")}</p></article>`;
-    })
-    .join("");
-  return `${lead}<details class="passages" open><summary>${escapeHtml(text.passagesTitle)}</summary>${cards}</details>`;
+  const label = escapeHtml(t().answerSources);
+  els.answerSources.innerHTML =
+    `<p><strong>${label}</strong></p>` +
+    sources
+      .map((source) => {
+        const href = `#/page?path=${encodeURIComponent(source.path)}`;
+        const snippet = highlight(source.text.slice(0, 220), query);
+        return `<div><a href="${href}">${escapeHtml(source.title || source.path)}</a><p>${snippet}${source.text.length > 220 ? "…" : ""}</p></div>`;
+      })
+      .join("");
 }
 
 function highlight(text, query) {
   let safe = escapeHtml(text);
-  for (const token of contentTokens(query)) {
+  for (const token of contentTokens(query || "")) {
     const pattern = new RegExp(`(${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "giu");
     safe = safe.replace(pattern, "<mark>$1</mark>");
   }
@@ -323,7 +276,7 @@ async function askGemini(question, hits) {
   for (const model of models) {
     last = await postModel(model, body);
     if (last.ok) return last.payload;
-    if (last.status === 400 && body.generationConfig.thinkingConfig) {
+    if (last.status === 400 && body.generationConfig?.thinkingConfig) {
       const retryBody = JSON.parse(JSON.stringify(body));
       delete retryBody.generationConfig.thinkingConfig;
       const retry = await postModel(model, retryBody);
@@ -354,7 +307,11 @@ async function postModel(model, body) {
     }
     return { ok: true, payload };
   } catch (error) {
-    return { ok: false, status: 0, message: error.name === "AbortError" ? "The request took too long." : "The browser could not reach Gemini." };
+    return {
+      ok: false,
+      status: 0,
+      message: error.name === "AbortError" ? "The request took too long." : "The browser could not reach Gemini.",
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -379,46 +336,41 @@ function renderLibrary() {
   const text = t();
   const articles = state.corpus.articles || [];
   if (!articles.length) {
-    els.library.innerHTML = `<div class="empty"><h2>${escapeHtml(text.emptyLibraryTitle)}</h2><p>${escapeHtml(text.emptyLibraryBody)}</p><p><a href="${INBOX_URL}">${escapeHtml(text.openInbox)}</a></p></div>`;
+    els.libraryList.innerHTML = `<p>${escapeHtml(text.emptyLibrary)}</p>`;
     return;
   }
-  const guides = articles.filter((article) => article.kind === "wiki");
-  const sources = articles.filter((article) => article.kind === "raw");
-  els.library.innerHTML = `<div class="library">${section(text.guides, guides, text.guide, text)}${section(text.sources, sources, text.sourceDoc, text)}</div>`;
-}
-
-function section(title, articles, kicker, text) {
-  if (!articles.length) return "";
-  const cards = articles
+  els.libraryList.innerHTML = articles
     .map((article) => {
-      const href = `#/doc?path=${encodeURIComponent(article.path)}`;
-      const updated = article.updated ? `${text.updated} ${article.updated}` : "";
-      return `<a class="card" href="${href}"><span class="kicker">${escapeHtml(kicker)}</span><h3>${escapeHtml(article.title)}</h3><p>${escapeHtml(article.summary || "")}</p><p>${escapeHtml(updated)}</p></a>`;
+      const href = `#/page?path=${encodeURIComponent(article.path)}`;
+      const meta = article.updated ? `${text.updated} ${article.updated}` : article.kind || "";
+      return `<a class="library-item" href="${href}"><strong>${escapeHtml(article.title)}</strong><span>${escapeHtml(meta)}</span></a>`;
     })
     .join("");
-  return `<section class="group"><h2>${escapeHtml(title)}</h2><div class="cards">${cards}</div></section>`;
 }
 
-async function renderDoc(rawPath) {
+async function renderPage(rawPath) {
   const text = t();
   const path = safeDocPath(rawPath);
   if (!path) {
-    els.doc.innerHTML = `<p>${escapeHtml(text.notFound)}</p>`;
+    els.pageTitle.textContent = text.notFound;
+    els.pageMeta.textContent = "";
+    els.pageBody.textContent = "";
     return;
   }
-  const back = `<a class="back" href="#/library">${escapeHtml(text.back)}</a>`;
+  const article = (state.corpus.articles || []).find((item) => item.path === path);
+  els.pageTitle.textContent = article?.title || path.split("/").pop();
+  els.pageMeta.textContent = article?.updated ? `${text.updated} ${article.updated}` : text.sourceDoc;
   if (!path.endsWith(".md")) {
     const href = `./${path.split("/").map(encodeURIComponent).join("/")}`;
-    els.doc.innerHTML = `${back}<article class="doc"><h1>${escapeHtml(path.split("/").pop())}</h1><p><a href="${href}">${escapeHtml(text.download)}</a></p></article>`;
+    els.pageBody.innerHTML = `<p><a href="${href}">${escapeHtml(path)}</a></p>`;
     return;
   }
   const href = `./${path.split("/").map(encodeURIComponent).join("/")}`;
   const response = await fetch(href);
   if (!response.ok) {
-    els.doc.innerHTML = `${back}<p>${escapeHtml(text.notFound)}</p>`;
+    els.pageBody.textContent = text.notFound;
     return;
   }
   const markdown = await response.text();
-  const banner = path.startsWith("raw/") ? `<p class="banner">${escapeHtml(text.sourceBanner)}</p>` : "";
-  els.doc.innerHTML = `${back}<article class="doc">${banner}<div class="doc-body">${renderMarkdown(markdown, { from: path })}</div></article>`;
+  els.pageBody.innerHTML = renderMarkdown(markdown, { from: path });
 }
