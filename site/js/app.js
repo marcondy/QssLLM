@@ -1,6 +1,6 @@
 import { STRINGS, detectLanguage } from "./i18n.js";
 import { renderMarkdown, escapeHtml, safeDocPath } from "./markdown.js";
-import { search, searchQuery, contentTokens } from "./retrieve.js";
+import { retrieve, searchQuery, contentTokens } from "./retrieve.js";
 import { localAnswer, geminiBody, parseAnswer, answerTextFromGemini } from "./ground.js";
 
 const DAILY_LIMIT = 20;
@@ -202,7 +202,8 @@ async function onSubmit(event) {
 
   const chunks = state.corpus.chunks || [];
   const query = searchQuery(state.previousQuestions, question);
-  const hits = chunks.length ? search(chunks, query) : [];
+  const hasKey = Boolean(config.apiKey) && asksToday() < DAILY_LIMIT;
+  const hits = chunks.length ? retrieve(chunks, query, { limit: 8, allowCrossLingual: true }) : [];
   state.previousQuestions.push(question);
 
   try {
@@ -214,11 +215,12 @@ async function onSubmit(event) {
       replacePending({ role: "assistant", kind: "local", localKind: "nomatch" });
       return;
     }
-    if (!config.apiKey || asksToday() >= DAILY_LIMIT) {
+    if (!hasKey) {
+      const cross = hits.some((hit) => hit.crossLingual);
       replacePending({
         role: "assistant",
         kind: "passages",
-        lead: !config.apiKey ? t().passagesNoKey : t().quota,
+        lead: !config.apiKey ? (cross ? t().crossLead : t().passagesNoKey) : t().quota,
         chunks: hits,
         broad: hits.some((hit) => hit.broad),
         query,
@@ -290,7 +292,12 @@ function renderThread() {
 function passageBlock(message, text) {
   const chunks = message.chunks || [];
   if (!chunks.length) return "";
-  const lead = message.broad ? `<p class="lead">${escapeHtml(text.broadLead)}</p>` : "";
+  const leadText = message.chunks?.some((chunk) => chunk.crossLingual)
+    ? text.crossLead
+    : message.broad
+      ? text.broadLead
+      : "";
+  const lead = leadText ? `<p class="lead">${escapeHtml(leadText)}</p>` : "";
   const cards = chunks
     .map((chunk) => {
       const href = `#/doc?path=${encodeURIComponent(chunk.path)}`;
